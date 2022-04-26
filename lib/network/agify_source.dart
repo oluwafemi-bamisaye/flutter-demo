@@ -2,8 +2,9 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart';
-import 'package:pokemon/model/agify.dart';
-import 'package:pokemon/network/rest_client.dart';
+
+import '../model/agify.dart';
+import 'agify_client.dart';
 
 class RemoteDataSource {
   RestClient client = RestClient(Client());
@@ -20,5 +21,4 @@ class RemoteDataSource {
       throw Exception('Unable to get user age');
     }
   }
-
 }
