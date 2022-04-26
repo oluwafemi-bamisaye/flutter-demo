@@ -1,7 +1,7 @@
 
 class User {
   late final String name;
-  late final String age;
+  late final int age;
   late final int count;
 
   User({required this.name, required this.age, required this.count});
@@ -11,5 +11,4 @@ class User {
       age: json["age"],
       count: json["count"]
   );
-
 }

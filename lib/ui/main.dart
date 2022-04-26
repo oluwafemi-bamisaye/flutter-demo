@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:pokemon/model/agify.dart';
+import 'package:pokemon/network/data_source.dart';
 
 void main() {
   runApp(const MyApp());
@@ -11,7 +13,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Agify',
       theme: ThemeData(
         // This is the theme of your application.
         //
@@ -24,92 +26,97 @@ class MyApp extends StatelessWidget {
         // is not restarted.
         primarySwatch: Colors.blue,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const AgifyScreen(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({Key? key, required this.title}) : super(key: key);
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
+class AgifyScreen extends StatefulWidget {
+  const AgifyScreen({Key? key}) : super(key: key);
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<AgifyScreen> createState() => _AgifyScreenState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
-  }
+class _AgifyScreenState extends State<AgifyScreen> {
+  final _controller = TextEditingController();
+  final _focusNode = FocusNode();
+  final RemoteDataSource _dataSource = RemoteDataSource();
+  var shouldLoadAge = false;
+  User _user = User(name: "", age: 0, count: 0);
+  late String errorMsg = "";
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
       appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
+        title: const Text("Predict Age"),
       ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Invoke "debug painting" (press "p" in the console, choose the
-          // "Toggle Debug Paint" action from the Flutter Inspector in Android
-          // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-          // to see the wireframe for each widget.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headline4,
-            ),
-          ],
-        ),
+      body: Column(
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Flexible(
+                child: TextField(
+                  controller: _controller,
+                  decoration:
+                      const InputDecoration.collapsed(hintText: 'Enter name'),
+                  focusNode: _focusNode,
+                ),
+              ),
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 8.0),
+                child: IconButton(
+                  icon: const Icon(Icons.search),
+                  onPressed: () => fetchAge(_controller.text),
+                ),
+              )
+            ],
+          ),
+          Card(
+            child: userCard(_user),
+          )
+        ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
     );
+  }
+
+  void fetchAge(String name) {
+
+    shouldLoadAge = true;
+    FutureBuilder<User>(
+        future: _dataSource.userAge(name),
+        builder: (context, snapshot) {
+          if (snapshot.hasData) {
+            setState(() {
+              _user = snapshot.data!;
+              errorMsg = "";
+            });
+          } else {
+            setState(() {
+              errorMsg = snapshot.error.toString();
+            });
+          }
+          shouldLoadAge = false;
+          throw Exception("Unable to load age");
+        });
+  }
+
+  Widget userCard(User user) {
+    if (shouldLoadAge) {
+      return const CircularProgressIndicator();
+    } else if (user.name.isNotEmpty){
+      return Column(
+        children: [
+          Text("Name: ${user.name}"),
+          Text("Age: ${user.age}"),
+          Text("Count: ${user.count}"),
+        ],
+      );
+    } else {
+      return Text(errorMsg);
+    }
+
   }
 }
